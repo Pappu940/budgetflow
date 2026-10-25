@@ -1,0 +1,94 @@
+{% extends "base.html" %}{% block title %}Dashboard · BudgetFlow{% endblock %}{% block content %}
+<div class="head">
+  <h1>Hi, {{ uname.split()[0] }}</h1>
+  <form method="get"><input type="month" name="month" value="{{ month }}" onchange="this.form.submit()" aria-label="Month"></form>
+</div>
+
+<div class="stats">
+  <div class="card stat earned"><span>Earned</span><b class="income">{{ inr(earned) }}</b></div>
+  <div class="card stat spent"><span>Spent</span><b class="expense">{{ inr(spent) }}</b></div>
+  <div class="card stat saved"><span>Saved</span><b class="saving">{{ inr(saved) }}</b><small>{{ savings_rate }}% of earnings</small></div>
+  <div class="card stat left"><span>Left to spend</span><b>{{ inr(balance) }}</b><small>earned − spent − saved</small></div>
+</div>
+
+<div class="two">
+  <section class="card">
+    <h2>Monthly budget</h2>
+    {% if budget %}
+      <p class="muted">{{ inr(spent) }} of {{ inr(budget) }} spent ({{ budget_used }}%)</p>
+      <div class="bar"><span class="{{ 'over' if budget_used > 100 else 'expense' }}" style="width: {{ [budget_used, 100]|min }}%"></span></div>
+      {% if spent > budget %}<p class="warn">You are {{ inr(spent - budget) }} over budget this month.</p>
+      {% else %}<p class="muted">{{ inr(budget - spent) }} left this month.</p>{% endif %}
+    {% else %}
+      <p class="muted">Set a monthly spending limit and track it here.</p>
+    {% endif %}
+    <form method="post" action="{{ url_for('set_budget') }}" class="inline">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="number" name="budget" min="0" placeholder="Monthly budget in ₹" value="{{ budget or '' }}" aria-label="Monthly budget">
+      <button class="btn sm">Save</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Where your money went</h2>
+    {% if legend %}
+      <div class="donut-wrap">
+        <div class="donut" style="background: {{ donut }}" role="img" aria-label="Spending by category"><span>{{ inr(spent) }}</span></div>
+        <ul class="legend">
+          {% for item in legend %}
+            <li><i style="background: {{ item.colour }}"></i>{{ item.name }}<b>{{ inr(item.amount) }}</b><small>{{ item.percent }}%</small></li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% else %}
+      <p class="muted">No expenses this month yet. <a href="{{ url_for('expenses') }}">Add one</a>.</p>
+    {% endif %}
+  </section>
+</div>
+
+<section class="card">
+  <h2>Last 6 months</h2>
+  <div class="chart" role="img" aria-label="Earnings and expenses for the last six months">
+    {% for m in history %}
+      <div class="col">
+        <div class="pair">
+          <span class="b earned-bar" style="height: {{ m.earned_pct }}%" title="Earned {{ inr(m.earned) }}"></span>
+          <span class="b spent-bar" style="height: {{ m.spent_pct }}%" title="Spent {{ inr(m.spent) }}"></span>
+        </div>
+        <small>{{ m.label }}</small>
+      </div>
+    {% endfor %}
+  </div>
+  <p class="key"><i class="earned-bar"></i>Earned <i class="spent-bar"></i>Spent</p>
+</section>
+
+<section class="card">
+  <h2>Category budgets</h2>
+  {% for l in limits %}
+    <div class="row"><span>{{ l.category }}</span><span class="{{ 'warn' if l.state != 'ok' }}">{{ inr(l.spent) }} of {{ inr(l.limit) }}</span></div>
+    <div class="bar"><span class="{{ l.state }}" style="width: {{ [l.percent, 100]|min }}%"></span></div>
+    {% if l.state == 'over' %}<p class="warn">Over by {{ inr(l.spent - l.limit) }}.</p>
+    {% elif l.state == 'near' %}<p class="warn">{{ l.percent }}% used, nearly at the limit.</p>{% endif %}
+  {% else %}
+    <p class="muted">Set a limit for a category, like Food, and BudgetFlow will warn you as you get close.</p>
+  {% endfor %}
+  <form method="post" action="{{ url_for('set_category_budget') }}" class="inline">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <select name="category" aria-label="Category">{% for c in expense_categories %}<option>{{ c }}</option>{% endfor %}</select>
+    <input type="number" name="amount" min="0" placeholder="Limit in ₹ (empty removes it)" aria-label="Category limit">
+    <button class="btn sm">Save</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Recent activity</h2>
+  {% for t in recent %}
+    <div class="row">
+      <span>{{ t.category }}{% if t.note %} <small class="muted">· {{ t.note }}</small>{% endif %}<br><small class="muted">{{ t.date }}</small></span>
+      <b class="{{ {'income': 'income', 'expense': 'expense', 'saving': 'saving'}[t.kind] }}">{{ '+' if t.kind == 'income' else '−' }}{{ inr(t.amount) }}</b>
+    </div>
+  {% else %}
+    <p class="muted">Nothing here yet. Start with <a href="{{ url_for('earnings') }}">your earnings</a>.</p>
+  {% endfor %}
+</section>
+{% endblock %}

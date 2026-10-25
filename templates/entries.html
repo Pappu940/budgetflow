@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% block title %}{{ info.title }} · BudgetFlow{% endblock %}{% block content %}
+<div class="head">
+  <h1>{{ info.title }}</h1>
+  <form method="get"><input type="month" name="month" value="{{ month }}" onchange="this.form.submit()" aria-label="Month"></form>
+</div>
+
+<section class="card">
+  <h2>{{ info.button }}</h2>
+  <form method="post" class="add">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Amount (₹)<input type="number" name="amount" min="1" required></label>
+    <label>Category<select name="category">{% for c in info.categories %}<option>{{ c }}</option>{% endfor %}</select></label>
+    <label>Date<input type="date" name="date" value="{{ today }}" required></label>
+    <label>Note (optional)<input name="note" maxlength="80"></label>
+    <button class="btn">{{ info.button }}</button>
+  </form>
+</section>
+
+<section class="card">
+  <div class="row"><h2>This month</h2><b>{{ inr(total) }}</b></div>
+  {% for t in rows %}
+    <div class="row">
+      <span>{{ t.category }}{% if t.note %} <small class="muted">· {{ t.note }}</small>{% endif %}<br><small class="muted">{{ t.date }}</small></span>
+      <span class="right">
+        <b>{{ inr(t.amount) }}</b>
+        <a class="btn ghost sm" href="{{ url_for('edit_entry', entry_id=t.id) }}">Edit</a>
+        <form method="post" action="{{ url_for('delete_entry', entry_id=t.id) }}" onsubmit="return confirm('Delete this entry?')">
+          <input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn ghost sm">Delete</button>
+        </form>
+      </span>
+    </div>
+  {% else %}
+    <p class="muted">No entries for this month yet.</p>
+  {% endfor %}
+</section>
+{% endblock %}

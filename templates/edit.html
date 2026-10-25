@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block title %}Edit entry · BudgetFlow{% endblock %}{% block content %}
+<div class="head"><h1>Edit {{ info.title|lower }}</h1></div>
+<section class="card">
+  <form method="post" class="add">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Amount (₹)<input type="number" name="amount" min="1" value="{{ entry.amount }}" required></label>
+    <label>Category<select name="category">{% for c in info.categories %}<option {{ 'selected' if c == entry.category }}>{{ c }}</option>{% endfor %}</select></label>
+    <label>Date<input type="date" name="date" value="{{ entry.date }}" required></label>
+    <label>Note (optional)<input name="note" maxlength="80" value="{{ entry.note or '' }}"></label>
+    <button class="btn">Save changes</button>
+  </form>
+  <p class="muted"><a href="{{ url_for(section, month=entry.date[:7]) }}">Cancel</a></p>
+</section>
+{% endblock %}

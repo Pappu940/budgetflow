@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}BudgetFlow{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script>
+  // Apply the saved theme before the page paints, so it never flashes the wrong colours.
+  var dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  try { var saved = localStorage.getItem("theme"); if (saved) dark = saved === "dark"; } catch (e) {}
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+
+  function toggleTheme() {
+    var next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem("theme", next); } catch (e) {}
+  }
+</script>
+</head>
+<body>
+{% set page = request.endpoint %}
+
+{% if uname %}
+<div id="overlay"></div>
+<aside id="drawer" aria-label="Main menu" aria-hidden="true">
+  <div class="drawer-head">
+    <span class="logo"><i></i>BudgetFlow</span>
+    <button class="icon" id="menu-close" type="button" aria-label="Close menu">✕</button>
+  </div>
+  <p class="who">Signed in as <b>{{ uname }}</b></p>
+  <nav>
+    <a href="{{ url_for('dashboard') }}" class="{{ 'active' if page == 'dashboard' }}">Dashboard</a>
+    <a href="{{ url_for('earnings') }}" class="{{ 'active' if page == 'earnings' }}">Earnings</a>
+    <a href="{{ url_for('expenses') }}" class="{{ 'active' if page == 'expenses' }}">Expenses</a>
+    <a href="{{ url_for('savings') }}" class="{{ 'active' if page == 'savings' }}">Savings</a>
+    <a href="{{ url_for('goals') }}" class="{{ 'active' if page == 'goals' }}">Goals</a>
+  </nav>
+  <form method="post" action="{{ url_for('logout') }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="btn ghost">Log out</button>
+  </form>
+</aside>
+{% endif %}
+
+<div class="wrap">
+  <header>
+    <div class="left">
+      {% if uname %}
+      <button class="icon" id="menu-button" type="button" aria-label="Open menu" aria-controls="drawer" aria-expanded="false">
+        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 4.5h14M2 9h14M2 13.5h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      {% endif %}
+      <a class="logo" href="{{ url_for('home') }}"><i></i>BudgetFlow</a>
+    </div>
+    <button class="icon" type="button" onclick="toggleTheme()" aria-label="Switch light or dark mode">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg>
+    </button>
+  </header>
+  {% for message in get_flashed_messages() %}<p class="flash" role="status">{{ message }}</p>{% endfor %}
+  {% block content %}{% endblock %}
+</div>
+
+{% if uname %}
+<script>
+  // The side menu: open with the three-line button, close with the X, the dark area or Escape.
+  (function () {
+    var button = document.getElementById("menu-button");
+    var drawer = document.getElementById("drawer");
+    var overlay = document.getElementById("overlay");
+
+    function setOpen(open) {
+      drawer.classList.toggle("open", open);
+      overlay.classList.toggle("open", open);
+      drawer.setAttribute("aria-hidden", open ? "false" : "true");
+      button.setAttribute("aria-expanded", open ? "true" : "false");
+      document.body.classList.toggle("locked", open);
+      if (open) { drawer.querySelector("a").focus(); } else { button.focus(); }
+    }
+
+    button.addEventListener("click", function () { setOpen(true); });
+    document.getElementById("menu-close").addEventListener("click", function () { setOpen(false); });
+    overlay.addEventListener("click", function () { setOpen(false); });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && drawer.classList.contains("open")) { setOpen(false); }
+    });
+  })();
+</script>
+{% endif %}
+</body>
+</html>

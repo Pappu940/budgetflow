@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.pyc
+budgetflow.db
+.venv/
+.vercel
